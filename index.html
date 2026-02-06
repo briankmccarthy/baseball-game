@@ -31,10 +31,35 @@
             left: 0;
             width: 100%;
             height: 70%;
-            background: repeating-linear-gradient(90deg, #2d5016 0px, #2d5016 50px, #3a6b1f 50px, #3a6b1f 100px);
+            background: #2d5016;
             border-radius: 50% 50% 0 0;
             z-index: 1;
         }
+        
+        /* Outfield stands - crowd seating */
+        .outfield-stands {
+            position: absolute;
+            top: 0;
+            left: 5%;
+            width: 90%;
+            height: 15%;
+            background: repeating-linear-gradient(
+                90deg,
+                #4a4a6a 0px,
+                #4a4a6a 30px,
+                #5a5a7a 30px,
+                #5a5a7a 60px,
+                #6a4a4a 60px,
+                #6a4a4a 90px,
+                #4a6a4a 90px,
+                #4a6a4a 120px
+            );
+            border-radius: 50% 50% 0 0;
+            border-bottom: 3px solid #333;
+            z-index: 0;
+            box-shadow: inset 0 -5px 10px rgba(0,0,0,0.3);
+        }
+        
         .infield-dirt {
             position: absolute;
             bottom: 10%;
@@ -58,6 +83,20 @@
             z-index: 10;
             box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
         }
+        
+        /* Pitcher's rubber */
+        .pitchers-rubber {
+            position: absolute;
+            bottom: 35%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 4px;
+            background: white;
+            border-radius: 1px;
+            z-index: 11;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
         .home-circle {
             position: absolute;
             bottom: 8%;
@@ -68,6 +107,29 @@
             background: #c19a6b;
             border-radius: 50% 50% 0 0;
             z-index: 4;
+        }
+        
+        /* Batter's boxes - left and right */
+        .batters-box-left {
+            position: absolute;
+            bottom: 10%;
+            left: 46%;
+            width: 30px;
+            height: 50px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            z-index: 5;
+            border-radius: 2px;
+        }
+        
+        .batters-box-right {
+            position: absolute;
+            bottom: 10%;
+            left: 52%;
+            width: 30px;
+            height: 50px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            z-index: 5;
+            border-radius: 2px;
         }
         .base {
             position: absolute;
@@ -310,10 +372,14 @@
 </head>
 <body>
     <div id="gameContainer">
+        <div class="outfield-stands"></div>
         <div class="outfield"></div>
         <div class="infield-dirt"></div>
         <div class="home-circle"></div>
         <div class="mound"></div>
+        <div class="pitchers-rubber"></div>
+        <div class="batters-box-left"></div>
+        <div class="batters-box-right"></div>
         <div class="foul-line foul-line-left"></div>
         <div class="foul-line foul-line-right"></div>
         <div id="homePlate"></div>
@@ -324,6 +390,7 @@
             <div>HOME RUNS: <span id="homeRuns">0</span></div>
             <div>PITCHES: <span id="pitchCount">0</span>/10</div>
             <div>STRIKES: <span id="strikes">0</span>/3</div>
+            <div style="margin-top: 10px; border-top: 1px solid #FFD700; padding-top: 10px;">HIGH SCORE: <span id="highScore">0</span></div>
         </div>
         <div id="pitcher">
             <div class="pitcher-circle">
@@ -355,6 +422,7 @@
         const homeRunsDisplay = document.getElementById('homeRuns');
         const pitchCountDisplay = document.getElementById('pitchCount');
         const strikesDisplay = document.getElementById('strikes');
+        const highScoreDisplay = document.getElementById('highScore');
         const feedback = document.getElementById('feedback');
         const instructions = document.getElementById('instructions');
         const startButton = document.getElementById('startButton');
@@ -371,6 +439,81 @@
         let fastPitches = [];
         let wiggleBalls = [];
         let pitchInterval = null;
+        
+        // Load high score from local storage
+        let highScore = localStorage.getItem('baseballHighScore') || 0;
+        
+        // Sound effects using Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playBatCrack() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 100;
+            oscillator.type = 'sawtooth';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+        
+        function playHomeRunCheer() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.3);
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+        
+        function playStrike() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 200;
+            oscillator.type = 'triangle';
+            
+            gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+        
+        function playFoul() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 150;
+            oscillator.type = 'square';
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.15);
+        }
 
         startButton.addEventListener('click', startGame);
         restartButton.addEventListener('click', restartGame);
@@ -490,6 +633,7 @@
                     if (currentBall === ball) {
                         strikes++;
                         updateScore();
+                        playStrike();
                         
                         if (strikes >= 3) {
                             showFeedback('STRIKE 3!', '#FF0000');
@@ -522,7 +666,20 @@
             if (ballBottom <= 14 && ballBottom >= 10) {
                 homeRuns++;
                 updateScore();
-                showFeedback('HOME RUN! 💥', '#FFD700');
+                
+                // Play sounds
+                playBatCrack();
+                setTimeout(playHomeRunCheer, 100);
+                
+                // Calculate distance based on timing (12% is perfect)
+                const perfectTiming = 12;
+                const timingDiff = Math.abs(ballBottom - perfectTiming);
+                // Perfect (0 diff) = 450ft, worst in range (2 diff) = 400ft
+                const baseDistance = 450 - (timingDiff * 25);
+                // Add small random variation for realism
+                const distance = Math.round(baseDistance + (Math.random() * 20 - 10));
+                
+                showFeedback(`HOME RUN! ${distance} ft 💥`, '#FFD700');
                 
                 if (pitchInterval) {
                     clearInterval(pitchInterval);
@@ -561,6 +718,7 @@
                     pitchInterval = null;
                 }
                 
+                playFoul();
                 showFeedback('FOUL BALL!', '#FFA500');
                 
                 // Animate foul ball flying to the left
@@ -597,6 +755,7 @@
             homeRunsDisplay.textContent = homeRuns;
             pitchCountDisplay.textContent = pitchCount;
             strikesDisplay.textContent = strikes;
+            highScoreDisplay.textContent = highScore;
         }
 
         function showFeedback(text, color) {
@@ -608,6 +767,15 @@
 
         function endGame() {
             gameActive = false;
+            
+            // Check and update high score
+            let isNewHighScore = false;
+            if (homeRuns > highScore) {
+                highScore = homeRuns;
+                localStorage.setItem('baseballHighScore', highScore);
+                isNewHighScore = true;
+            }
+            
             let message = '';
             if (homeRuns === 10) {
                 message = 'PERFECT GAME! All 10 home runs! 🏆';
@@ -618,13 +786,33 @@
             } else {
                 message = `You hit ${homeRuns} home run${homeRuns !== 1 ? 's' : ''}. Try again!`;
             }
+            
+            if (isNewHighScore) {
+                message += '\n\n🎉 NEW HIGH SCORE! 🎉';
+            }
+            
             finalScore.textContent = message;
             gameOver.style.display = 'block';
         }
 
         function endGameStruckOut() {
             gameActive = false;
-            finalScore.innerHTML = `<div style="color: #FF4444; font-size: 48px; margin-bottom: 20px;">THREE STRIKES, YOU'RE OUT! ⚾</div><div>You hit ${homeRuns} home run${homeRuns !== 1 ? 's' : ''} before striking out.</div>`;
+            
+            // Check and update high score
+            let isNewHighScore = false;
+            if (homeRuns > highScore) {
+                highScore = homeRuns;
+                localStorage.setItem('baseballHighScore', highScore);
+                isNewHighScore = true;
+            }
+            
+            let message = `<div style="color: #FF4444; font-size: 48px; margin-bottom: 20px;">THREE STRIKES, YOU'RE OUT! ⚾</div><div>You hit ${homeRuns} home run${homeRuns !== 1 ? 's' : ''} before striking out.</div>`;
+            
+            if (isNewHighScore) {
+                message += '<div style="color: #FFD700; font-size: 32px; margin-top: 20px;">🎉 NEW HIGH SCORE! 🎉</div>';
+            }
+            
+            finalScore.innerHTML = message;
             gameOver.style.display = 'block';
         }
     </script>
