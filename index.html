@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Run Derby</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: #1a1a2e;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 800px;
+            background: #1a4d1a;
+            border: 4px solid #333;
+            border-radius: 50% 50% 5% 5%;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .outfield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70%;
+            background: repeating-linear-gradient(90deg, #2d5016 0px, #2d5016 50px, #3a6b1f 50px, #3a6b1f 100px);
+            border-radius: 50% 50% 0 0;
+            z-index: 1;
+        }
+        .infield-dirt {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            width: 380px;
+            height: 380px;
+            background: #c19a6b;
+            z-index: 4;
+        }
+        .mound {
+            position: absolute;
+            bottom: 35%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #a0826d 0%, #8b6f47 100%);
+            border-radius: 50%;
+            border: 3px solid #7a5c3a;
+            z-index: 10;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .home-circle {
+            position: absolute;
+            bottom: 8%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 70px;
+            background: #c19a6b;
+            border-radius: 50% 50% 0 0;
+            z-index: 4;
+        }
+        .base {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            transform: rotate(45deg);
+            z-index: 11;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+            border: 1px solid #ddd;
+        }
+        #homePlate {
+            position: absolute;
+            bottom: 12%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            background: white;
+            clip-path: polygon(50% 100%, 100% 65%, 100% 0%, 0% 0%, 0% 65%);
+            z-index: 11;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+            border: 1px solid #ddd;
+        }
+        #firstBase { bottom: 35%; right: 26%; }
+        #secondBase { bottom: 58%; left: 50%; transform: translateX(-50%) rotate(45deg); }
+        #thirdBase { bottom: 35%; left: 26%; }
+        .foul-line {
+            position: absolute;
+            bottom: 12%;
+            left: 50%;
+            width: 4px;
+            height: 700px;
+            background: white;
+            z-index: 6;
+            transform-origin: bottom center;
+        }
+        .foul-line-left { transform: translateX(-50%) rotate(-45deg); }
+        .foul-line-right { transform: translateX(-50%) rotate(45deg); }
+        #scoreBoard {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.85);
+            color: #FFD700;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 18px;
+            z-index: 100;
+            border: 2px solid #FFD700;
+        }
+        #homeRuns { font-size: 32px; color: #FF4444; font-weight: bold; }
+        #strikes { color: #FF6B6B; }
+        #pitcher {
+            position: absolute;
+            bottom: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 35px;
+            height: 35px;
+            z-index: 12;
+        }
+        .pitcher-circle {
+            width: 100%;
+            height: 100%;
+            background: #FF6B6B;
+            border-radius: 50%;
+            border: 4px solid #cc0000;
+            position: relative;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+        }
+        .pitcher-cap {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 10px;
+            background: #000080;
+            border-radius: 50% 50% 0 0;
+        }
+        #batter {
+            position: absolute;
+            bottom: 12%;
+            left: 55.5%;
+            transform: translateX(-50%);
+            width: 35px;
+            height: 35px;
+            z-index: 12;
+        }
+        .batter-circle {
+            width: 100%;
+            height: 100%;
+            background: #4169E1;
+            border-radius: 50%;
+            border: 4px solid #0000cc;
+            position: relative;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+        }
+        .batter-helmet {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 10px;
+            background: #FF0000;
+            border-radius: 50% 50% 0 0;
+        }
+        #bat {
+            position: absolute;
+            bottom: 12.5%;
+            left: 54%;
+            width: 10px;
+            height: 45px;
+            background: linear-gradient(to bottom, #8B4513 0%, #8B4513 75%, #333 75%, #333 100%);
+            border-radius: 5px 5px 2px 2px;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(180deg);
+            transition: transform 0.25s ease-out;
+            z-index: 11;
+        }
+        #bat.swinging { transform: translateX(-50%) rotate(420deg); }
+        .ball {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: radial-gradient(circle at 35% 35%, #FFFFFF, #E0E0E0);
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            z-index: 50;
+            border: 2px solid #CCCCCC;
+        }
+        .ball::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 20%;
+            width: 60%;
+            height: 2px;
+            background: #CC0000;
+            border-radius: 50%;
+            transform: translateY(-50%) rotate(-30deg);
+        }
+        .ball::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 20%;
+            width: 60%;
+            height: 2px;
+            background: #CC0000;
+            border-radius: 50%;
+            transform: translateY(-50%) rotate(30deg);
+        }
+        #instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 200;
+            border: 3px solid #FFD700;
+        }
+        #instructions h1 {
+            color: #FFD700;
+            margin-bottom: 20px;
+            font-size: 36px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        #instructions p { font-size: 18px; margin-bottom: 15px; line-height: 1.6; }
+        #startButton {
+            background: #FF4444;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        #startButton:hover { background: #FF6666; transform: scale(1.05); }
+        #feedback {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 56px;
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 4px 4px 8px rgba(0,0,0,0.8);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 150;
+            transition: opacity 0.3s;
+        }
+        #feedback.show { opacity: 1; }
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 200;
+            display: none;
+            border: 3px solid #FFD700;
+        }
+        #gameOver h2 {
+            color: #FFD700;
+            font-size: 42px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        #gameOver p { font-size: 24px; margin-bottom: 30px; }
+        #restartButton {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        #restartButton:hover { background: #66BB6A; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div class="outfield"></div>
+        <div class="infield-dirt"></div>
+        <div class="home-circle"></div>
+        <div class="mound"></div>
+        <div class="foul-line foul-line-left"></div>
+        <div class="foul-line foul-line-right"></div>
+        <div id="homePlate"></div>
+        <div class="base" id="firstBase"></div>
+        <div class="base" id="secondBase"></div>
+        <div class="base" id="thirdBase"></div>
+        <div id="scoreBoard">
+            <div>HOME RUNS: <span id="homeRuns">0</span></div>
+            <div>PITCHES: <span id="pitchCount">0</span>/10</div>
+            <div>STRIKES: <span id="strikes">0</span>/3</div>
+        </div>
+        <div id="pitcher">
+            <div class="pitcher-circle">
+                <div class="pitcher-cap"></div>
+            </div>
+        </div>
+        <div id="batter">
+            <div class="batter-circle">
+                <div class="batter-helmet"></div>
+            </div>
+        </div>
+        <div id="bat"></div>
+        <div id="feedback"></div>
+        <div id="instructions">
+            <h1>⚾ HOME RUN DERBY ⚾</h1>
+            <p>Click or press SPACE to swing!</p>
+            <p>Watch out for fastballs & wiggle balls!</p>
+            <button id="startButton">PLAY BALL!</button>
+        </div>
+        <div id="gameOver">
+            <h2>GAME OVER!</h2>
+            <p id="finalScore"></p>
+            <button id="restartButton">PLAY AGAIN</button>
+        </div>
+    </div>
+    <script>
+        const gameContainer = document.getElementById('gameContainer');
+        const bat = document.getElementById('bat');
+        const homeRunsDisplay = document.getElementById('homeRuns');
+        const pitchCountDisplay = document.getElementById('pitchCount');
+        const strikesDisplay = document.getElementById('strikes');
+        const feedback = document.getElementById('feedback');
+        const instructions = document.getElementById('instructions');
+        const startButton = document.getElementById('startButton');
+        const gameOver = document.getElementById('gameOver');
+        const finalScore = document.getElementById('finalScore');
+        const restartButton = document.getElementById('restartButton');
+
+        let homeRuns = 0;
+        let pitchCount = 0;
+        let strikes = 0;
+        let gameActive = false;
+        let canSwing = false;
+        let currentBall = null;
+        let fastPitches = [];
+        let wiggleBalls = [];
+        let pitchInterval = null;
+
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', restartGame);
+        document.addEventListener('click', swing);
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                swing();
+            }
+        });
+
+        function startGame() {
+            instructions.style.display = 'none';
+            gameActive = true;
+            homeRuns = 0;
+            pitchCount = 0;
+            strikes = 0;
+            
+            // Select 3 random pitches to be fast
+            fastPitches = [];
+            while (fastPitches.length < 3) {
+                const r = Math.floor(Math.random() * 10) + 1;
+                if (!fastPitches.includes(r)) {
+                    fastPitches.push(r);
+                }
+            }
+            
+            // Select 2 random pitches to be wiggle balls (not already fast)
+            wiggleBalls = [];
+            while (wiggleBalls.length < 2) {
+                const r = Math.floor(Math.random() * 10) + 1;
+                if (!fastPitches.includes(r) && !wiggleBalls.includes(r)) {
+                    wiggleBalls.push(r);
+                }
+            }
+            
+            console.log('Fast pitches:', fastPitches, 'Wiggle balls:', wiggleBalls);
+            updateScore();
+            setTimeout(throwPitch, 1500);
+        }
+
+        function restartGame() {
+            gameOver.style.display = 'none';
+            startGame();
+        }
+
+        function throwPitch() {
+            if (!gameActive || pitchCount >= 10) {
+                endGame();
+                return;
+            }
+
+            if (pitchInterval) clearInterval(pitchInterval);
+            if (currentBall) {
+                currentBall.remove();
+                currentBall = null;
+            }
+
+            pitchCount++;
+            updateScore();
+            canSwing = false;
+
+            const ball = document.createElement('div');
+            ball.className = 'ball';
+            ball.style.bottom = '35%';
+            ball.style.left = '50%';
+            ball.style.transform = 'translateX(-50%)';
+            gameContainer.appendChild(ball);
+            currentBall = ball;
+
+            let bottomPos = 35;
+            let leftPos = 50;
+            let ballSize = 18;
+            
+            const isFast = fastPitches.includes(pitchCount);
+            const isWiggle = wiggleBalls.includes(pitchCount);
+            const speed = isFast ? 0.9 : 0.6;
+            const growthRate = isFast ? 0.3 : 0.2;
+            let wigglePhase = 0;  // Track wiggle progression
+            
+            console.log('Pitch', pitchCount, '- Fast:', isFast, 'Wiggle:', isWiggle);
+            
+            // Show what type of pitch this is
+            if (isFast) {
+                console.log('⚡ FASTBALL!');
+            } else if (isWiggle) {
+                console.log('🔄 WIGGLE BALL!');
+            }
+            
+            pitchInterval = setInterval(() => {
+                bottomPos -= speed;
+                ballSize += growthRate;
+                
+                // Wiggle ball: moves left, then right, then back to center as it approaches
+                if (isWiggle) {
+                    wigglePhase += 0.15;
+                    // Use sine wave to create smooth left-right-center motion
+                    // Starts at 0, goes left (negative), right (positive), back to 0
+                    const wiggleOffset = Math.sin(wigglePhase) * 2;
+                    leftPos = 50 + wiggleOffset;
+                }
+                
+                ball.style.bottom = bottomPos + '%';
+                ball.style.left = leftPos + '%';
+                ball.style.transform = 'translateX(-50%)';  // Always center the ball on its position
+                ball.style.width = ballSize + 'px';
+                ball.style.height = ballSize + 'px';
+
+                if (bottomPos <= 14 && bottomPos >= 10) {
+                    canSwing = true;
+                }
+
+                if (bottomPos < 8) {
+                    clearInterval(pitchInterval);
+                    pitchInterval = null;
+                    canSwing = false;
+                    if (currentBall === ball) {
+                        strikes++;
+                        updateScore();
+                        
+                        if (strikes >= 3) {
+                            showFeedback('STRIKE 3!', '#FF0000');
+                            setTimeout(() => {
+                                ball.remove();
+                                currentBall = null;
+                                endGameStruckOut();
+                            }, 1000);
+                        } else {
+                            showFeedback('STRIKE ' + strikes + '!', '#FF4444');
+                            setTimeout(() => {
+                                ball.remove();
+                                currentBall = null;
+                                setTimeout(throwPitch, 1500);
+                            }, 500);
+                        }
+                    }
+                }
+            }, 20);
+        }
+
+        function swing() {
+            if (!gameActive) return;
+            bat.classList.add('swinging');
+            setTimeout(() => bat.classList.remove('swinging'), 250);
+            if (!canSwing || !currentBall) return;
+
+            const ballBottom = parseFloat(currentBall.style.bottom);
+
+            if (ballBottom <= 14 && ballBottom >= 10) {
+                homeRuns++;
+                updateScore();
+                showFeedback('HOME RUN! 💥', '#FFD700');
+                
+                if (pitchInterval) {
+                    clearInterval(pitchInterval);
+                    pitchInterval = null;
+                }
+                
+                const flyingBall = currentBall;
+                canSwing = false;
+                currentBall = null;
+                
+                let flyBottom = ballBottom;
+                let flyLeft = parseFloat(flyingBall.style.left);
+                let ballSize = parseFloat(flyingBall.style.width);
+                const randomDir = Math.random() < 0.5 ? -1 : 1;
+                
+                const flyInterval = setInterval(() => {
+                    flyBottom += 1.2;
+                    flyLeft += randomDir * 0.7;
+                    ballSize = Math.max(ballSize - 0.2, 6);
+                    flyingBall.style.bottom = flyBottom + '%';
+                    flyingBall.style.left = flyLeft + '%';
+                    flyingBall.style.width = ballSize + 'px';
+                    flyingBall.style.height = ballSize + 'px';
+                    
+                    if (flyBottom > 75) {
+                        clearInterval(flyInterval);
+                        flyingBall.remove();
+                    }
+                }, 30);
+
+                setTimeout(throwPitch, 3000);
+            } else {
+                // Foul ball - bad timing but made contact
+                if (pitchInterval) {
+                    clearInterval(pitchInterval);
+                    pitchInterval = null;
+                }
+                
+                showFeedback('FOUL BALL!', '#FFA500');
+                
+                // Animate foul ball flying to the left
+                const foulBall = currentBall;
+                canSwing = false;
+                currentBall = null;
+                
+                let foulBottom = ballBottom;
+                let foulLeft = parseFloat(foulBall.style.left);
+                let foulSize = parseFloat(foulBall.style.width);
+                
+                const foulInterval = setInterval(() => {
+                    foulBottom += 0.5;  // Move up slightly
+                    foulLeft -= 2;      // Move left at 90 degrees
+                    foulSize = Math.max(foulSize - 0.3, 4);
+                    foulBall.style.bottom = foulBottom + '%';
+                    foulBall.style.left = foulLeft + '%';
+                    foulBall.style.transform = 'translateX(-50%)';
+                    foulBall.style.width = foulSize + 'px';
+                    foulBall.style.height = foulSize + 'px';
+                    
+                    // Remove when it goes off screen to the left
+                    if (foulLeft < 0) {
+                        clearInterval(foulInterval);
+                        foulBall.remove();
+                    }
+                }, 20);
+                
+                setTimeout(throwPitch, 1500);
+            }
+        }
+
+        function updateScore() {
+            homeRunsDisplay.textContent = homeRuns;
+            pitchCountDisplay.textContent = pitchCount;
+            strikesDisplay.textContent = strikes;
+        }
+
+        function showFeedback(text, color) {
+            feedback.textContent = text;
+            feedback.style.color = color;
+            feedback.classList.add('show');
+            setTimeout(() => feedback.classList.remove('show'), 1000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            let message = '';
+            if (homeRuns === 10) {
+                message = 'PERFECT GAME! All 10 home runs! 🏆';
+            } else if (homeRuns >= 7) {
+                message = `Amazing! ${homeRuns} home runs! You're a slugger! ⭐`;
+            } else if (homeRuns >= 4) {
+                message = `Great job! ${homeRuns} home runs! Keep practicing! 👍`;
+            } else {
+                message = `You hit ${homeRuns} home run${homeRuns !== 1 ? 's' : ''}. Try again!`;
+            }
+            finalScore.textContent = message;
+            gameOver.style.display = 'block';
+        }
+
+        function endGameStruckOut() {
+            gameActive = false;
+            finalScore.innerHTML = `<div style="color: #FF4444; font-size: 48px; margin-bottom: 20px;">THREE STRIKES, YOU'RE OUT! ⚾</div><div>You hit ${homeRuns} home run${homeRuns !== 1 ? 's' : ''} before striking out.</div>`;
+            gameOver.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
